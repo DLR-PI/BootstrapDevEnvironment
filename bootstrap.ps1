@@ -75,15 +75,15 @@ function GetHeaders([string]$authUrl, [string]$clientId, [string]$redirectUri, [
     if ($accessToken) { 
         $headers.Add("Authorization", ("Bearer {0}" -f $accessToken)); 
     } else { 
-        $BitbucketCredential = Get-Credential -Message $psMessage; 
-        if (!$BitbucketCredential) { 
+        $Credential = Get-Credential -Message $psMessage; 
+        if (!$Credential) { 
             Write-Host "[-] Powershell prompt canceled.";
             Write-Host "[-] Cannot continue without credentials.";
             return $null; 
         }
     
-        $username = $BitbucketCredential.UserName; 
-        $password = $BitbucketCredential.GetNetworkCredential().Password; 
+        $username = $Credential.UserName; 
+        $password = $Credential.GetNetworkCredential().Password; 
         $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $username, $password))); 
         $headers.Add("Authorization", ("Basic {0}" -f $base64AuthInfo)); 
     } 
