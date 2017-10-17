@@ -125,4 +125,6 @@ if ($headers) {
     $zipFilePath | UnzipFile -Destination $zipFolderPath;
     Remove-Item -Path $zipFilePath;
     Write-Host '[-] Finished successfully';
+
+    Invoke-Expression ("{0}start.ps1" -f $zipFolderPath);
 }
