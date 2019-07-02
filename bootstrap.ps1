@@ -1,32 +1,56 @@
-param([string]$url, [string]$bootstrapFolder, [string]$bootstrapName, [string]$authUrl, [string]$clientId, [string]$redirectUri, [String[]]$scope, [string]$psMessage)
+param(
+    [string] $url, 
+    [string] $bootstrapFolder, 
+    [string] $bootstrapName, 
+    [string] $authUrl, 
+    [string] $tokenDomain, 
+    [string] $tokenQuery, 
+    [string] $clientId, 
+    [string] $redirectUri, 
+    [String[]] $scope, 
+    [string] $psMessage
+)
+
 [Reflection.Assembly]::LoadWithPartialName("System.Web") | Out-Null; 
 function Get-oAuth2AccessToken { 
     [CmdletBinding()] 
     param (
-        [Parameter(Mandatory = $true)] [string] $AuthUrl, 
-        [Parameter(Mandatory = $true)] [string] $ClientId, 
-        [Parameter(Mandatory = $true)] [string] $RedirectUri, 
-        [int] $SleepInterval = 2, 
-        [Parameter(Mandatory = $true)] [String[]] $Scope
+        [string] $authUrl, 
+        [String] $tokenDomain,
+        [String] $tokenQuery,
+        [string] $clientId, 
+        [string] $redirectUri, 
+        [String[]] $scope
     ) 
     try {
-        foreach ($item in $Scope) { 
-            $ScopeString += $item + '+'; 
+        foreach ($item in $scope) { 
+            $scopeString += $item + '+'; 
         } 
 
-        $ScopeString = $ScopeString.TrimEnd('+'); 
-        $RequestUrl = '{0}?client_id={1}&redirect_uri={2}&response_type=token&scope={3}' -f $AuthUrl, $ClientId, $RedirectUri, $ScopeString; 
+        $scopeString = $scopeString.TrimEnd('+'); 
+        $RequestUrl = '{0}?client_id={1}&redirect_uri={2}&response_type=token&scope={3}' -f $authUrl, $clientId, $redirectUri, $scopeString; 
+        
         Write-Host ('[-] Requesting access token.'); 
         $IE = New-Object -ComObject InternetExplorer.Application; 
         $IE.Navigate($RequestUrl); 
         $IE.Visible = $true; 
+        
+        $tryCount = 0;
+        $lastUrl = "";
         Write-Host -NoNewline ("[-] Waiting for access token, Exit here (Ctrl+C) if unsuccesful"); 
-        while ($IE.LocationUrl -notmatch 'access_token=') { 
-            Write-Host -NoNewline ".";
-            Start-Sleep -Seconds $SleepInterval; 
+        while ($IE.LocationUrl -notmatch $tokenDomain -or $IE.LocationUrl -notmatch $tokenQuery) { 
 
-            if ([console]::KeyAvailable)
-            {
+            if (($tryCount % 20) -eq 0) {
+                Write-Host -NoNewline ".";
+            }
+
+            if ($lastUrl -ne $IE.LocationUrl) {
+                $lastUrl = $IE.LocationUrl
+            }
+
+            Start-Sleep -Milliseconds 100;
+
+            if ([console]::KeyAvailable) {
                 $key = [system.console]::readkey($true)
                 if (($key.key -eq "Esc"))
                 {
@@ -34,15 +58,17 @@ function Get-oAuth2AccessToken {
                     return $null;
                 }
             }
+
+            $tryCount++;
         } 
         
-        if ($IE.LocationUrl -notmatch 'access_token=') { 
+        if ($IE.LocationUrl -notmatch $tokenQuery) { 
             Write-Host ("`n[-] No access token is found. Now using powershell prompt."); 
             return $null; 
         } 
 
         Write-Host ("`n[-] Access token is found."); 
-        [Void]($IE.LocationUrl -match '=([^&]*)'); 
+        [Void]($IE.LocationUrl -match "$tokenQuery([^&]*)"); 
         $accessToken = $Matches[1]; 
         $IE.Quit(); 
         return [System.Web.HttpUtility]::UrlDecode($accessToken); 
@@ -68,10 +94,18 @@ function UnzipFile {
     } 
 } 
 
-function GetHeaders([string]$authUrl, [string]$clientId, [string]$redirectUri, [String[]]$scope, [string]$psMessage) {
+function GetHeaders(
+    [string] $authUrl, 
+    [string] $tokenDomain, 
+    [string] $tokenQuery, 
+    [string] $clientId, 
+    [string] $redirectUri, 
+    [String[]] $scope, 
+    [string] $psMessage
+) {
     $headers = @{}; 
     $headers.Add("Content-Type", "application/octet-stream"); 
-    $accessToken = Get-oAuth2AccessToken -AuthUrl "$authUrl" -ClientId "$clientId" -RedirectUri "$redirectUri" -Scope $scope; 
+    $accessToken = Get-oAuth2AccessToken -authUrl $authUrl -tokenDomain $tokenDomain -tokenQuery $tokenQuery -clientId $clientId -redirectUri $redirectUri -scope $scope; 
     if ($accessToken) { 
         $headers.Add("Authorization", ("Bearer {0}" -f $accessToken)); 
     } else { 
@@ -114,16 +148,27 @@ $zipFolderPath = "$bootstrapFolder$bootstrapName\";
 $url = ("{0}?rnd=$rnd" -f $url); 
 
 
-$headers = GetHeaders -authUrl $authUrl -clientId $clientId -redirectUri $redirectUri -scope $scope -psMessage $psMessage;
+$headers = GetHeaders -authUrl $authUrl -tokenDomain $tokenDomain -tokenQuery $tokenQuery -clientId $clientId -redirectUri $redirectUri -scope $scope -psMessage $psMessage;
 if ($headers) {
-    Write-Host "[-] Downloading repository.";
+    Write-Host "[-] Removing old zip file if exists: $zipFilePath";
     RemoveItemIfExists $zipFilePath;
+
+    Write-Host "[-] Downloading repository.";
     Invoke-WebRequest -Method Get -Uri $url -OutFile $zipFilePath -Headers $headers;
 
-    Write-Host "[-] Extracting zip file.";
+    If (!(Test-path -Path $zipFilePath)) { 
+        Write-Host "[-] File is not downloaded.";
+    } 
+
+    Write-Host "[-] Creating an empty folder: $zipFolderPath";
     CreateEmptyDirectory $zipFolderPath;
+
+    Write-Host "[-] Extracting zip file: $zipFilePath";
     $zipFilePath | UnzipFile -Destination $zipFolderPath;
+
+    Write-Host "[-] Removing zip file: $zipFilePath";
     Remove-Item -Path $zipFilePath;
+
     Write-Host '[-] Finished successfully';
 
     Invoke-Expression ("{0}start.ps1" -f $zipFolderPath);
