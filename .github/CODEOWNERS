@@ -1,0 +1,13 @@
+* @DLR-PI/devops @DLR-PI/innovation @DLR-PI/product 
+
+*.html @DLR-PI/devops @DLR-PI/innovation @DLR-PI/product  @DLR-PI/webapprovers 
+*.htm @DLR-PI/devops @DLR-PI/innovation @DLR-PI/product  @DLR-PI/webapprovers 
+*.cshtml @DLR-PI/devops @DLR-PI/innovation @DLR-PI/product  @DLR-PI/webapprovers 
+*.aspx @DLR-PI/devops @DLR-PI/innovation @DLR-PI/product  @DLR-PI/webapprovers 
+*.css @DLR-PI/devops @DLR-PI/innovation @DLR-PI/product  @DLR-PI/webapprovers 
+*.scss @DLR-PI/devops @DLR-PI/innovation @DLR-PI/product  @DLR-PI/webapprovers 
+*.less @DLR-PI/devops @DLR-PI/innovation @DLR-PI/product  @DLR-PI/webapprovers 
+
+github/*.yml @DLR-PI/devops @DLR-PI/innovation @DLR-PI/product 
+azure-pipelines.yml @DLR-PI/devops @DLR-PI/innovation @DLR-PI/product 
+pipeline-templates/* @DLR-PI/devops @DLR-PI/innovation @DLR-PI/product 
