@@ -1,5 +1,5 @@
-* @DLR-PI/devops @DLR-PI/innovation @DLR-PI/portals-auth 
+* @DLR-PI/devops @DLR-PI/portals-auth 
 
-github/*.yml @DLR-PI/devops @DLR-PI/innovation @DLR-PI/portals-auth 
-azure-pipelines.yml @DLR-PI/devops @DLR-PI/innovation @DLR-PI/portals-auth 
-pipeline-templates/* @DLR-PI/devops @DLR-PI/innovation @DLR-PI/portals-auth 
+github/*.yml @DLR-PI/devops @DLR-PI/portals-auth 
+azure-pipelines.yml @DLR-PI/devops @DLR-PI/portals-auth 
+pipeline-templates/* @DLR-PI/devops @DLR-PI/portals-auth 
